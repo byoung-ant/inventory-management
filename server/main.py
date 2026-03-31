@@ -120,6 +120,17 @@ class CreatePurchaseOrderRequest(BaseModel):
     expected_delivery_date: str
     notes: Optional[str] = None
 
+class OrderCreate(BaseModel):
+    order_number: str
+    customer: str
+    items: List[dict]
+    status: str
+    order_date: str
+    expected_delivery: str
+    total_value: float
+    warehouse: Optional[str] = None
+    category: Optional[str] = None
+
 # API endpoints
 @app.get("/")
 def root():
@@ -152,6 +163,15 @@ def get_orders(
     filtered_orders = apply_filters(orders, warehouse, category, status)
     filtered_orders = filter_by_month(filtered_orders, month)
     return filtered_orders
+
+@app.post("/api/orders", response_model=Order)
+def create_order(order: OrderCreate):
+    """Create a new order (e.g. a submitted restock order) and append to in-memory list"""
+    new_order = order.model_dump()
+    # Assign a unique id based on current list length
+    new_order["id"] = str(len(orders) + 1)
+    orders.append(new_order)
+    return new_order
 
 @app.get("/api/orders/{order_id}", response_model=Order)
 def get_order(order_id: str):
